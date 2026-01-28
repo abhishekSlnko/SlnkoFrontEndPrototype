@@ -1,0 +1,850 @@
+import InfoIcon from "@mui/icons-material/Info";
+import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import SearchIcon from "@mui/icons-material/Search";
+import {
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Modal,
+  ModalDialog,
+  Option,
+  Select,
+  Tooltip,
+  useTheme,
+} from "@mui/joy";
+import Box from "@mui/joy/Box";
+import Button from "@mui/joy/Button";
+import Checkbox from "@mui/joy/Checkbox";
+import FormControl from "@mui/joy/FormControl";
+import FormLabel from "@mui/joy/FormLabel";
+import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
+import Input from "@mui/joy/Input";
+import Sheet from "@mui/joy/Sheet";
+import Typography from "@mui/joy/Typography";
+import { Calendar } from "lucide-react";
+import { forwardRef, useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useGetAllExpenseQuery } from "../../redux/expenseSlice";
+
+const AllExpense = forwardRef((props, ref) => {
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [open, setOpen] = useState(false);
+  const [selectedExpenses, setSelectedExpenses] = useState([]);
+  const [expandedCard, setExpandedCard] = useState(null);
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
+  const [perPage, setPerPage] = useState(initialPageSize);
+
+
+  const toggleExpand = (id) => {
+    setExpandedCard(expandedCard === id ? null : id);
+  };
+
+  const { data: getExpense = [], isLoading } = useGetAllExpenseQuery({
+    page: currentPage,
+    limit: perPage,
+    department: selectedDepartment,
+    search: searchQuery,
+  });
+
+
+
+  const total = getExpense?.total || 0;
+  const limit = getExpense?.limit || 10;
+  const totalPages = Math.ceil(total / limit);
+
+  const getPaginationRange = () => {
+    const siblings = 1;
+    const pages = [];
+
+    if (totalPages <= 5 + siblings * 2) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      const left = Math.max(currentPage - siblings, 2);
+      const right = Math.min(currentPage + siblings, totalPages - 1);
+
+      pages.push(1);
+      if (left > 2) pages.push("...");
+
+      for (let i = left; i <= right; i++) pages.push(i);
+
+      if (right < totalPages - 1) pages.push("...");
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
+
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      const ids = paginatedExpenses.map((row) => row._id);
+      setSelectedExpenses((prevSelected) => [
+        ...new Set([...prevSelected, ...ids]),
+      ]);
+    } else {
+      const ids = paginatedExpenses.map((row) => row._id);
+      setSelectedExpenses((prevSelected) =>
+        prevSelected.filter((id) => !ids.includes(id))
+      );
+    }
+  };
+
+  const handleRowSelect = (_id) => {
+    setSelectedExpenses((prev) =>
+      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
+    );
+  };
+  const handleSearch = (query) => {
+    setSearchQuery(query.toLowerCase());
+  };
+  const expenses = useMemo(
+    () => (Array.isArray(getExpense?.data) ? getExpense.data : []),
+    [getExpense]
+  );
+
+
+  const filteredAndSortedData = expenses.filter((expense) => {
+    if (!user || !user.name) return false;
+
+    const userName = user.name.trim();
+    const userRole = user.department?.trim();
+    const isAdmin =
+      userRole === "admin" ||
+      userRole === "superadmin" ||
+      (userRole === "HR" && userName !== "Manish Shah");
+    const submittedBy = expense.emp_name?.trim() || "";
+
+
+    const allowedStatuses = [
+      "submitted",
+      "manager approval",
+      "hr approval",
+      "final approval",
+      "hold",
+      "rejected",
+    ];
+    const status =
+      typeof expense.current_status === "string"
+        ? expense.current_status
+        : expense.current_status?.status || "";
+    if (!allowedStatuses.includes(status)) return false;
+
+    const isSubmittedByUser = submittedBy === userName;
+
+    const projectViewUsers = [
+      "Mayank Kumar",
+      "Gaurav Sharma",
+      "Shyam Singh",
+      "Raghav Kumar Jha",
+    ];
+    const canSeeProjects =
+      projectViewUsers.includes(userName) && userRole === "Projects";
+
+    return isAdmin || isSubmittedByUser || canSeeProjects;
+  });
+
+  useEffect(() => {
+    const page = parseInt(searchParams.get("page")) || 1;
+    setCurrentPage(page);
+    // --- read department from URL search params on load/change ---
+    const dept = searchParams.get("department") || "";
+    setSelectedDepartment(dept);
+  }, [searchParams]);
+
+  const paginatedExpenses = filteredAndSortedData;
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setSearchParams({
+        page: String(page),
+        ...(selectedDepartment ? { department: selectedDepartment } : {}),
+      });
+    }
+  };
+
+  const ExpenseCode = ({ currentPage, expense_code, createdAt }) => {
+    const formattedDate = createdAt
+      ? new Date(createdAt).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+      : "N/A";
+    return (
+      <>
+        <Box>
+          <span
+            style={{ cursor: "pointer", fontWeight: 500 }}
+            onClick={() => {
+              localStorage.setItem("edit_expense", expense_code);
+              navigate(
+                `/edit_expense?page=${currentPage}&code=${expense_code}`
+              );
+            }}
+          >
+            {expense_code || "-"}
+          </span>
+        </Box>
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <Calendar size={12} />
+          <span style={{ fontSize: 12, fontWeight: 600 }}>
+            Created At:{" "}
+          </span>{" "}
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {formattedDate}
+          </Typography>
+        </Box>
+      </>
+    );
+  };
+
+  return (
+    <Box
+      sx={{
+        ml: { lg: "var(--Sidebar-width)" },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
+      <Box
+        display="flex"
+        justifyContent="flex-end"
+        alignItems="center"
+        pb={0.5}
+        flexWrap="wrap"
+        gap={1}
+      >
+        <Box
+          sx={{
+            py: 1,
+            display: "flex",
+            alignItems: "flex-end",
+            gap: 1.5,
+            width: { xs: "100%", md: "50%" },
+          }}
+        >
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by Expense Code, Name or Status"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </FormControl>
+          {(
+            user?.name === "Shruti Tripathi" ||
+            user?.department === "Accounts" ||
+            user?.department === "admin" ||
+            user?.name === "IT Team"
+          )}
+
+        </Box>
+      </Box>
+
+
+      {/* Table */}
+      <Sheet
+        className="OrderTableContainer"
+        variant="outlined"
+        sx={{
+          display: { xs: "none", sm: "block" },
+          width: "100%",
+          borderRadius: "sm",
+          maxHeight: { xs: "66vh", xl: "75vh" },
+          overflow: "auto",
+        }}
+      >
+        <Box
+          component="table"
+          sx={{ width: "100%", borderCollapse: "collapse" }}
+        >
+          <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
+            <Box component="tr">
+              <Box
+                component="th"
+                sx={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 3,
+                  backgroundColor: "neutral.softBg",
+                  borderBottom: "1px solid #ddd",
+                  padding: "8px",
+                  textAlign: "left",
+                }}
+
+              >
+                <Checkbox
+                  size="sm"
+                  checked={
+                    paginatedExpenses.length > 0 &&
+                    paginatedExpenses.every((expense) =>
+                      selectedExpenses.includes(expense._id)
+                    )
+                  }
+                  indeterminate={
+                    paginatedExpenses.some((expense) =>
+                      selectedExpenses.includes(expense._id)
+                    ) &&
+                    !paginatedExpenses.every((expense) =>
+                      selectedExpenses.includes(expense._id)
+                    )
+                  }
+                  onChange={handleSelectAll}
+                />
+              </Box>
+              {[
+                "Expense Code",
+                "Employee Name",
+                "Requested Amount",
+                "Approval Amount",
+                "Rejected Amount",
+                "Disbursement Date",
+                "Status",
+                "",
+              ].map((header, index) => (
+                <Box
+                  component="th"
+                  key={index}
+                  sx={{
+                    position: "sticky",
+                    zIndex: 3,
+                    top: 0,
+                    borderBottom: "1px solid #ddd",
+                    backgroundColor: "neutral.softBg",
+                    borderBottom: "1px solid #ddd",
+                    padding: "8px",
+                    textAlign: "left",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {header}
+                </Box>
+              ))}
+            </Box>
+          </Box>
+          <Box component="tbody">
+            {isLoading ? (
+              <Box component="tr">
+                <Box
+                  component="td"
+                  colSpan={9}
+                  sx={{
+                    py: 2,
+                    textAlign: "center",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "inline-flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <CircularProgress size="sm" sx={{ color: "primary.500" }} />
+                    <Typography fontStyle="italic">
+                      Loading expense… please hang tight ⏳
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+            ) : paginatedExpenses.length > 0 ? (
+              paginatedExpenses.map((expense, index) => (
+                <Box
+                  component="tr"
+                  key={index}
+                  sx={{
+                    "&:hover": { backgroundColor: "neutral.plainHoverBg" },
+                  }}
+                >
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
+                    <Checkbox
+                      size="sm"
+                      color="primary"
+                      checked={selectedExpenses.includes(expense._id)}
+                      onChange={() => handleRowSelect(expense._id)}
+                    />
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
+                    <Box sx={{ fontSize: 15 }}>
+                      <ExpenseCode
+                        currentPage={currentPage}
+                        expense_code={expense.expense_code}
+                        createdAt={expense.createdAt}
+                      />
+                    </Box>
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                      fontSize: 15,
+                    }}
+                  >
+                    {expense.emp_name || "0"}
+                    <Box>
+                      <span style={{ fontSize: 12 }}>{expense.emp_id}</span>
+                    </Box>
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                      fontSize: 15,
+                    }}
+                  >
+                    {expense.total_requested_amount || "0"}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                      fontSize: 15,
+                    }}
+                  >
+                    {expense.total_approved_amount || "0"}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                      fontSize: 15,
+                    }}
+                  >
+                    {(() => {
+                      const requested = Number(
+                        expense.total_requested_amount || 0
+                      );
+                      const approved = Number(
+                        expense.total_approved_amount || 0
+                      );
+                      const rejected = requested - approved;
+                      return isNaN(rejected) ? "0" : rejected.toString();
+                    })()}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                      fontSize: 15,
+                    }}
+                  >
+                    {expense.disbursement_date
+                      ? new Date(expense.disbursement_date).toLocaleDateString(
+                        "en-GB"
+                      )
+                      : "-"}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                      fontSize: 15,
+                    }}
+                  >
+                    {(() => {
+                      const status =
+                        typeof expense.current_status === "string"
+                          ? expense.current_status
+                          : expense.current_status?.status;
+
+                      // const status = rawStatus;
+
+                      if (status === "submitted") {
+                        return (
+                          <Chip color="warning" variant="soft" size="sm">
+                            Pending
+                          </Chip>
+                        );
+                      } else if (status === "manager approval") {
+                        return (
+                          <Chip color="info" variant="soft" size="sm">
+                            Manager Approved
+                          </Chip>
+                        );
+                      } else if (status === "hr approval") {
+                        return (
+                          <Chip color="primary" variant="soft" size="sm">
+                            HR Approved
+                          </Chip>
+                        );
+                      } else if (status === "final approval") {
+                        return (
+                          <Chip color="success" variant="soft" size="sm">
+                            Approved
+                          </Chip>
+                        );
+                      } else if (status === "hold") {
+                        return (
+                          <Chip color="neutral" variant="soft" size="sm">
+                            On Hold
+                          </Chip>
+                        );
+                      } else if (status === "rejected") {
+                        const remarks = expense.current_status?.remarks?.trim();
+
+                        return (
+                          <Box
+                            display="inline-flex"
+                            alignItems="center"
+                            gap={1}
+                          >
+                            <Chip variant="soft" color="danger" size="sm">
+                              Rejected
+                            </Chip>
+                            <Tooltip
+                              title={remarks || "Remarks not found"}
+                              arrow
+                            >
+                              <IconButton size="sm" color="danger">
+                                <InfoIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        );
+                      } else {
+                        return (
+                          <Chip variant="outlined" size="sm">
+                            -
+                          </Chip>
+                        );
+                      }
+                    })()}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                      fontSize: 15,
+                    }}
+                  ></Box>
+                </Box>
+              ))
+            ) : (
+              <Box component="tr">
+                <Box
+                  component="td"
+                  colSpan={9}
+                  sx={{
+                    padding: "8px",
+                    textAlign: "center",
+                    fontStyle: "italic",
+                  }}
+                >
+                  No data available
+                </Box>
+              </Box>
+            )}
+          </Box>
+        </Box>
+      </Sheet>
+
+      {/* Mobile view */}
+      <Box
+        sx={{
+          display: { xs: "flex", md: "none" },
+          flexDirection: "column",
+          gap: 2,
+          p: 2,
+        }}
+      >
+        {paginatedExpenses.length > 0 ? (
+          paginatedExpenses.map((expense) => {
+            const requested = Number(expense.total_requested_amount || 0);
+            const approved = Number(expense.total_approved_amount || 0);
+            const rejected = requested - approved;
+            const disbursement = expense.disbursement_date
+              ? new Date(expense.disbursement_date).toLocaleDateString("en-GB")
+              : "-";
+            const status =
+              typeof expense.current_status === "string"
+                ? expense.current_status
+                : expense.current_status?.status || "";
+
+            const remarks =
+              expense.current_status?.remarks?.trim() || "No remarks provided";
+
+            const getStatusChip = () => {
+              switch (status) {
+                case "draft":
+                case "submitted":
+                  return (
+                    <Chip color="warning" variant="soft" size="sm">
+                      Pending
+                    </Chip>
+                  );
+                case "manager approval":
+                  return (
+                    <Chip color="info" variant="soft" size="sm">
+                      Manager Approved
+                    </Chip>
+                  );
+                case "hr approval":
+                  return (
+                    <Chip color="primary" variant="soft" size="sm">
+                      HR Approved
+                    </Chip>
+                  );
+                case "final approval":
+                  return (
+                    <Chip color="success" variant="soft" size="sm">
+                      Approved
+                    </Chip>
+                  );
+                case "hold":
+                  return (
+                    <Chip color="neutral" variant="soft" size="sm">
+                      On Hold
+                    </Chip>
+                  );
+                case "rejected":
+                  return (
+                    <>
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        gap={1}
+                        flexWrap="wrap"
+                      >
+                        <Chip variant="soft" color="danger" size="sm">
+                          Rejected
+                        </Chip>
+                        <IconButton
+                          size="sm"
+                          variant="outlined"
+                          color="danger"
+                          onClick={() => setOpen(true)}
+                        >
+                          <InfoIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+
+                      <Modal open={open} onClose={() => setOpen(false)}>
+                        <ModalDialog size="sm" layout="center">
+                          <Typography level="title-md" mb={1}>
+                            Rejection Reason
+                          </Typography>
+                          <Typography level="body-sm">{remarks}</Typography>
+                        </ModalDialog>
+                      </Modal>
+                    </>
+                  );
+                default:
+                  return (
+                    <Chip variant="outlined" size="sm">
+                      -
+                    </Chip>
+                  );
+              }
+            };
+
+            return (
+              <Card key={expense._id} variant="outlined">
+                <CardContent>
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={1}
+                  >
+                    <Typography level="title-md">
+                      <Box
+                        sx={{
+                          display: "inline",
+
+                          textUnderlineOffset: "2px",
+                          textDecorationColor: "#999",
+                        }}
+                      >
+                        <ExpenseCode
+                          currentPage={currentPage}
+                          expense_code={expense.expense_code}
+                          createdAt={expense.createdAt}
+                        />
+                      </Box>
+                    </Typography>
+                    {getStatusChip()}
+                  </Box>
+
+                  <Button
+                    size="sm"
+                    onClick={() => toggleExpand(expense._id)}
+                    variant="soft"
+                    fullWidth
+                  >
+                    {expandedCard === expense._id
+                      ? "Hide Details"
+                      : "View Details"}
+                  </Button>
+
+                  {expandedCard === expense._id && (
+                    <Box mt={1} pl={1}>
+                      <Typography level="body-sm">
+                        <strong>Requested:</strong> {requested}
+                      </Typography>
+                      <Typography level="body-sm">
+                        <strong>Approved:</strong> {approved}
+                      </Typography>
+                      <Typography level="body-sm">
+                        <strong>Rejected:</strong>{" "}
+                        {isNaN(rejected) ? "0" : rejected}
+                      </Typography>
+                      <Typography level="body-sm">
+                        <strong>Disbursement Date:</strong> {disbursement}
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })
+        ) : (
+          <Typography textAlign="center" fontStyle="italic">
+            No data available
+          </Typography>
+        )}
+      </Box>
+
+      {/* Pagination */}
+      <Box
+        className="Pagination-laptopUp"
+        sx={{
+          pt: 1,
+          gap: 1,
+          [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          alignItems: "center",
+        }}
+      >
+        <Button
+          size="sm"
+          variant="outlined"
+          color="neutral"
+          startDecorator={<KeyboardArrowLeftIcon />}
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          Previous
+        </Button>
+
+        <Box>
+          Showing page {currentPage} of {totalPages} ({total} results)
+        </Box>
+
+        <Box
+          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
+        >
+          {getPaginationRange().map((page, idx) =>
+            page === "..." ? (
+              <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
+                ...
+              </Box>
+            ) : (
+              <IconButton
+                key={page}
+                size="sm"
+                variant={page === currentPage ? "contained" : "outlined"}
+                color="neutral"
+                onClick={() => handlePageChange(page)}
+              >
+                {page}
+              </IconButton>
+            )
+          )}
+        </Box>
+
+        <FormControl size="sm" sx={{ minWidth: 80 }}>
+          <Select
+            value={perPage}
+            onChange={(_e, newValue) => {
+              setPerPage(newValue);
+              setCurrentPage(1);
+              setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                next.set("page", "1");
+                next.set("pageSize", String(newValue));
+                return next;
+              });
+            }}
+          >
+            {[10, 30, 60, 100, 500, 1000].map((num) => (
+              <Option key={num} value={num}>
+                {num}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+
+        <Button
+          size="sm"
+          variant="outlined"
+          color="neutral"
+          endDecorator={<KeyboardArrowRightIcon />}
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </Button>
+      </Box>
+    </Box>
+  );
+});
+export default AllExpense;
