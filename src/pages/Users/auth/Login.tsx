@@ -1,388 +1,153 @@
-import LockIcon from "@mui/icons-material/Lock";
-import Visibility from "@mui/icons-material/Visibility";
-import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import { Box, Button, Grid, Paper, TextField, Typography } from "@mui/material";
-import { useFormik } from "formik";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import Slider from "react-slick";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import "slick-carousel/slick/slick-theme.css";
-import "slick-carousel/slick/slick.css";
-import * as Yup from "yup";
-import Img1 from "../../../assets/New_Solar3.png";
-import Img5 from "../../../assets/protrac_foundation.png";
-import ImgX from "../../../assets/slnko_white_logo.png";
-import axios from "axios";
-import { useAddLoginsMutation } from "../../../redux/loginSlice";
-import Colors from "../../../utils/colors";
-import { OtpVerification } from "./OtpVerification";
-import { Modal, ModalDialog } from "@mui/joy";
+import { Eye, EyeOff } from "lucide-react"
+import { useState } from "react"
 
-const Login = () => {
-  const navigate = useNavigate();
-  const [errorMessage, setErrorMessage] = useState("");
-  const [addLogin] = useAddLoginsMutation();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [geoInfo, setGeoInfo] = useState({
-    latitude: null,
-    longitude: null,
-    fullAddress: "",
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [otpDialogOpen, setOtpDialogOpen] = useState(false);
-  const [emailForOtp, setEmailForOtp] = useState("");
+export default function CreateAccount() {
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  const handleTogglePassword = () => setShowPassword((prev) => !prev);
-
-  useEffect(() => {
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      const latitude = position.coords.latitude;
-      const longitude = position.coords.longitude;
-      let fullAddress = "";
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
-        );
-        const data = await res.json();
-        fullAddress = data.display_name || "";
-      } catch (err) {
-        console.log("Reverse geocoding failed");
-      }
-      setGeoInfo({ latitude, longitude, fullAddress });
-    });
-  }, []);
-  const handleLogin = async (values) => {
-  
-    setIsSubmitting(true);
-    try {
-      const loginPayload = {
-        ...values,
-        latitude: geoInfo.latitude,
-        longitude: geoInfo.longitude,
-        fullAddress: geoInfo.fullAddress,
-      };
-
-      const user = await addLogin(loginPayload).unwrap();
-
-      if (!user.token) {
-        toast.error("Login failed: Token not received.");
-        return;
-      }
-
-      const expiration = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
-      localStorage.setItem("authToken", user.token);
-      localStorage.setItem("authTokenExpiration", expiration.toString());
-
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/get-all-useR-IT`,
-        {
-          headers: { "x-auth-token": user.token },
-          withCredentials: true,
-        }
-      );
-
-      const matchedUser = response?.data?.data.find(
-        (item) => String(item._id) === String(user.userId)
-      );
-
-      if (!matchedUser) {
-        toast.error("Login failed: User details not found.");
-        return;
-      }
-
-      const userDetails = {
-        name: matchedUser.name,
-        email: matchedUser.email,
-        phone: matchedUser.phone,
-        emp_id: matchedUser.emp_id,
-        role: matchedUser.role,
-        department: matchedUser.department || "",
-        userID: matchedUser._id || "",
-        location: matchedUser.location || "",
-        about: matchedUser.about || "",
-        attacchment_url: matchedUser.attacchment_url || "",
-      };
-
-      const PROJECT_DASHBOARD_EMP_IDS = new Set([
-   "SE-004",
-   "SE-104",
-   "SE-398",
-   "SE-080",
-   "SE-227",
-   "SE-140",
-   "SE-277",
-   "SE-013",
-   "SE-095",
-   "SE-00XX",
-   "SE-00"
-]);
-
-      localStorage.setItem("userDetails", JSON.stringify(userDetails));
-      toast.success("Login successful!");
-      if (PROJECT_DASHBOARD_EMP_IDS.has(String(userDetails.emp_id || "").trim())) {
-  navigate("/dashboard-projects");
-} else {
-  navigate("/dashboard");
-}
-    } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.data?.message ||
-        error?.message ||
-        "Login failed.";
-      const email =
-        error?.response?.data?.email || error?.data?.email || error?.email;
-      if (
-        message === "Unrecognized device. OTP has been sent for verification."
-      ) {
-        setEmailForOtp(email);
-        setOtpDialogOpen(true);
-        toast.info(message);
-        return;
-      }
-      toast.error(message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const validationSchema = Yup.object({
-    name: Yup.string().required("Name is required!"),
-    password: Yup.string()
-      .required("Password is required!")
-      .matches(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])/,
-        "Password must contain one uppercase letter, one lowercase letter, one number, and one special character."
-      )
-      .min(8, "Password must be at least 8 characters long."),
-  });
-
-  const formik = useFormik({
-    initialValues: { name: "", password: "" },
-    validationSchema: validationSchema,
-    onSubmit: handleLogin,
-  });
-
-  const sliderSettings = {
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 3000,
-    arrows: false,
-  };
-
-  const submitButtonStyle = {
-    padding: "12px",
-    margin: "20px 0",
-    borderRadius: 15,
-    fontWeight: "600",
-    backgroundColor: Colors.palette.secondary.main,
-    display: "block",
-    textAlign: "center",
-    marginTop: "5%",
-    marginLeft: { xs: "20%", sm: "30%" },
-  };
   return (
-    <Box
-      sx={{
-        background:
-          "radial-gradient(circle at 100% 100%, #023159, #1F476A, #F5F5F5)",
-        height: { md: "100%", xs: "100vh" },
-        width: "100%",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        // overflow: "hidden",
-      }}
-    >
-      <Grid container spacing={2} sx={{ width: "100%", height: "100%" }}>
-        {/* Left Grid with Slider */}
-        <Grid
-          item
-          xs={12}
-          md={7}
-          sx={{
-            display: { xs: "none", sm: "none", md: "flex" },
-            justifyContent: "center",
-            alignItems: "center",
-            height: "100%",
-          }}
-        >
-          <Slider {...sliderSettings} style={{ width: "100%" }}>
-            <img
-              src={ImgX}
-              alt="Solar 2"
-              style={{ width: "100%", height: "auto", marginTop: "20%" }}
-            />
-            <img
-              src={Img1}
-              alt="Solar 1"
-              style={{ width: "100%", height: "auto" }}
-            />
-          </Slider>
-        </Grid>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-[#060b1a] to-black px-4">
+      <div className="w-full max-w-md rounded-2xl bg-[#0b1020]/80 backdrop-blur-xl border border-white/10 shadow-2xl p-6">
+        
+        {/* Logo */}
+        <div className="flex items-center justify-center gap-2 mb-6 text-white">
+          <span className="text-xl">⌘</span>
+          <span className="text-lg font-semibold">ProTrac</span>
+        </div>
 
-        {/* Right Grid with Form */}
-        <Grid
-          item
-          xs={12}
-          md={5}
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "100%",
-          }}
-        >
-          <Paper
-            elevation={3}
-            // style={paperStyle}
-            sx={{
-              // background: `linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8))`,
-              width: { sm: "60%", xl: "60%", md: "85%" },
-              background: Colors.palette.primary.main,
-              marginTop: { xl: "20%", sm: "0%" },
-              height: "auto",
-              padding: "20px",
-              display: "flex",
-              flexDirection: "column",
-              borderRadius: 10,
-            }}
+        {/* Header */}
+        <h2 className="text-xl font-semibold text-white">Create an account</h2>
+        <p className="text-sm text-gray-400 mt-1">
+          Enter your email and password to create an account.{" "}
+          <span className="text-gray-300">
+            Already have an account?{" "}
+            <a href="#" className="text-blue-400 hover:underline">
+              Sign In
+            </a>
+          </span>
+        </p>
+
+        {/* Error */}
+        <div className="mt-4 rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-2 text-sm text-red-400">
+          Invitation link is invalid or expired.{" "}
+          <a href="#" className="underline">
+            Go to sign in
+          </a>
+        </div>
+
+        {/* Form */}
+        <form className="mt-5 space-y-4">
+          <Input label="Name" placeholder="eg: John Doe" />
+          <Input label="Email" placeholder="name@example.com" type="email" />
+          <Input label="Username" placeholder="eg: john.doe" />
+
+          <Input label="Date of Birth" type="date" />
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="Village" placeholder="Village" />
+            <Input label="City" placeholder="City" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Select label="State" />
+            <Input label="Country" value="India" disabled />
+          </div>
+
+          {/* Password */}
+          <PasswordInput
+            label="Password"
+            show={showPassword}
+            toggle={() => setShowPassword(!showPassword)}
+          />
+
+          <PasswordInput
+            label="Confirm Password"
+            show={showConfirmPassword}
+            toggle={() => setShowConfirmPassword(!showConfirmPassword)}
+          />
+
+          <button
+            type="submit"
+            className="mt-2 w-full rounded-lg bg-blue-600/50 hover:bg-blue-600/70 transition text-white py-2.5 font-medium disabled:opacity-50"
           >
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                mb: 2,
-              }}
-            >
-              <img
-                src={Img5}
-                alt="Logo"
-                style={{ width: "100%", maxWidth: "250px" }}
-              />
-            </Box>
+            Create Account
+          </button>
+        </form>
 
-            <form
-              noValidate
-              encType="multipart/form-data"
-              onSubmit={formik.handleSubmit}
-              style={{ width: "100%" }}
-            >
-              <Typography>Username:</Typography>
-              <TextField
-                variant="outlined"
-                placeholder="Enter your name / Employee Code(SE-0XX)"
-                id="name"
-                name="name"
-                fullWidth
-                size="small"
-                type="text"
-                required
-                value={formik.values.name}
-                onChange={formik.handleChange}
-                error={formik.touched.name && Boolean(formik.errors.name)}
-                helperText={formik.touched.name && formik.errors.name}
-                sx={{
-                  mb: 2,
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: "8px",
-                    "& fieldset": { borderColor: "#ccc" },
-                    "&:hover fieldset": { borderColor: "#1976d2" },
-                    "&.Mui-focused fieldset": { borderColor: "#1976d2" },
-                  },
-                }}
-              />
-              <Typography>Password:</Typography>
-              <TextField
-                variant="outlined"
-                placeholder="Password"
-                id="password"
-                name="password"
-                fullWidth
-                size="small"
-                type={showPassword ? "text" : "password"}
-                value={formik.values.password}
-                onChange={formik.handleChange}
-                required
-                error={
-                  formik.touched.password && Boolean(formik.errors.password)
-                }
-                helperText={formik.touched.password && formik.errors.password}
-                InputProps={{
-                  endAdornment: (
-                    <Button
-                      aria-label="toggle password visibility"
-                      onClick={handleTogglePassword}
-                      onMouseDown={(e) => e.preventDefault()}
-                    >
-                      {showPassword ? <Visibility /> : <VisibilityOff />}
-                    </Button>
-                  ),
-                }}
-                sx={{
-                  mb: 2,
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: "8px",
-                    "& fieldset": { borderColor: "#ccc" },
-                    "&:hover fieldset": { borderColor: "#1976d2" },
-                    "&.Mui-focused fieldset": { borderColor: "#1976d2" },
-                  },
-                }}
-              />
-              {/* Error Message */}
-              {errorMessage && (
-                <Typography
-                  sx={{ color: "red", fontSize: "0.875rem", mb: "10px" }}
-                >
-                  {errorMessage}
-                </Typography>
-              )}
-              <Typography
-                sx={{
-                  color: "#023159",
-                  display: "flex",
-                  // mt: "1.2rem",
-                  cursor: "pointer",
-                }}
-                onClick={() => navigate("/forgot-password")}
-              >
-                <LockIcon sx={{ mr: "1rem" }} />
-                Forgot password?
-              </Typography>
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                style={submitButtonStyle}
-                disabled={isSubmitting}
-                // onClick={() => LoginUser()}
-              >
-                {isSubmitting ? "Logging you in..." : "Login"}
-              </Button>
-            </form>
-          </Paper>
-        </Grid>
+        <p className="mt-6 text-xs text-center text-gray-400">
+          By creating an account, you agree to our{" "}
+          <a href="#" className="underline">
+            Terms of Service
+          </a>{" "}
+          and{" "}
+          <a href="#" className="underline">
+            Privacy Policy
+          </a>
+          .
+        </p>
+      </div>
+    </div>
+  )
+}
 
-        <Modal open={otpDialogOpen} onClose={() => setOtpDialogOpen(false)}>
-          <ModalDialog>
-            <Typography level="h4" component="h2">
-              OTP Verification
-            </Typography>
+/* ------------------ Reusable Components ------------------ */
 
-            <OtpVerification 
-              email={emailForOtp}
-              onSuccess={() => setOtpDialogOpen(false)}
-            />
-          </ModalDialog>
-        </Modal>
-      </Grid>
-    </Box>
-  );
-};
-export default Login;
+function Input({
+  label,
+  type = "text",
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-sm text-gray-300">{label}</label>
+      <input
+        type={type}
+        className="w-full rounded-lg bg-[#0f172a] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600/40"
+        {...props}
+      />
+    </div>
+  )
+}
+
+function Select({ label }: { label: string }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-sm text-gray-300">{label}</label>
+      <select className="w-full rounded-lg bg-[#0f172a] border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-600/40">
+        <option>Select state</option>
+        <option>Maharashtra</option>
+        <option>Delhi</option>
+        <option>Karnataka</option>
+      </select>
+    </div>
+  )
+}
+
+function PasswordInput({
+  label,
+  show,
+  toggle,
+}: {
+  label: string
+  show: boolean
+  toggle: () => void
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-sm text-gray-300">{label}</label>
+      <div className="relative">
+        <input
+          type={show ? "text" : "password"}
+          className="w-full rounded-lg bg-[#0f172a] border border-white/10 px-3 py-2 pr-10 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600/40"
+        />
+        <button
+          type="button"
+          onClick={toggle}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+        >
+          {show ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
+      </div>
+    </div>
+  )
+}
