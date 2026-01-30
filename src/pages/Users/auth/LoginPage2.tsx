@@ -1,152 +1,124 @@
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, LogIn } from "lucide-react"
 import { useState } from "react"
 
-export default function CreateAccount() {
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+
+export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-[#060b1a] to-black px-4">
-      <div className="w-full max-w-md rounded-2xl bg-[#0b1020]/80 backdrop-blur-xl border border-white/10 shadow-2xl p-6">
-        
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-2 mb-6 text-white">
-          <span className="text-xl">⌘</span>
-          <span className="text-lg font-semibold">ProTrac</span>
-        </div>
+    <div className="min-h-screen bg-[#020617] flex flex-col md:flex-row text-white overflow-hidden">
+      
+      {/* ================= LEFT SECTION ================= */}
+      <div className="w-full md:w-1/2 flex flex-col justify-center items-center px-8 py-12">
+        <div className="w-full max-w-[350px]">
 
-        {/* Header */}
-        <h2 className="text-xl font-semibold text-white">Create an account</h2>
-        <p className="text-sm text-gray-400 mt-1">
-          Enter your email and password to create an account.{" "}
-          <span className="text-gray-300">
-            Already have an account?{" "}
-            <a href="#" className="text-blue-400 hover:underline">
-              Sign In
-            </a>
-          </span>
-        </p>
-
-        {/* Error */}
-        <div className="mt-4 rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-2 text-sm text-red-400">
-          Invitation link is invalid or expired.{" "}
-          <a href="#" className="underline">
-            Go to sign in
-          </a>
-        </div>
-
-        {/* Form */}
-        <form className="mt-5 space-y-4">
-          <Input label="Name" placeholder="eg: John Doe" />
-          <Input label="Email" placeholder="name@example.com" type="email" />
-          <Input label="Username" placeholder="eg: john.doe" />
-
-          <Input label="Date of Birth" type="date" />
-
-          <div className="grid grid-cols-2 gap-3">
-            <Input label="Village" placeholder="Village" />
-            <Input label="City" placeholder="City" />
+          {/* Logo */}
+          <div className="flex justify-center mb-12">
+            <img
+              src="/logo.png"
+              alt="ProTrac Logo"
+              className="h-20 w-auto object-contain"
+            />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Select label="State" />
-            <Input label="Country" value="India" disabled />
+          {/* Header */}
+          <div className="mb-6">
+            <h2 className="text-xl font-bold tracking-tight">
+              Sign in
+            </h2>
+            <p className="text-gray-400 text-sm mt-1">
+              Enter your email and password below to log into your account
+            </p>
           </div>
 
-          {/* Password */}
-          <PasswordInput
-            label="Password"
-            show={showPassword}
-            toggle={() => setShowPassword(!showPassword)}
-          />
+          {/* Form */}
+          <form className="space-y-4">
 
-          <PasswordInput
-            label="Confirm Password"
-            show={showConfirmPassword}
-            toggle={() => setShowConfirmPassword(!showConfirmPassword)}
-          />
+            {/* Email */}
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-gray-200">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="name@example.com"
+                className="bg-[#0f172a]/40 border-white/10 focus-visible:ring-blue-500/50"
+              />
+            </div>
 
-          <button
-            type="submit"
-            className="mt-2 w-full rounded-lg bg-blue-600/50 hover:bg-blue-600/70 transition text-white py-2.5 font-medium disabled:opacity-50"
-          >
-            Create Account
-          </button>
-        </form>
+            {/* Password */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="password" className="text-gray-200">
+                  Password
+                </Label>
+                <a
+                  href="#"
+                  className="text-xs text-gray-400 hover:text-white transition-colors"
+                >
+                  Forgot password?
+                </a>
+              </div>
 
-        <p className="mt-6 text-xs text-center text-gray-400">
-          By creating an account, you agree to our{" "}
-          <a href="#" className="underline">
-            Terms of Service
-          </a>{" "}
-          and{" "}
-          <a href="#" className="underline">
-            Privacy Policy
-          </a>
-          .
-        </p>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className="pr-10 bg-[#0f172a]/40 border-white/10 focus-visible:ring-blue-500/50"
+                />
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </Button>
+              </div>
+            </div>
+
+            {/* Submit */}
+            <Button
+              type="submit"
+              className="w-full flex items-center gap-2 bg-blue-500 hover:bg-blue-600 mt-2"
+            >
+              <LogIn size={16} />
+              Sign in
+            </Button>
+          </form>
+
+          {/* Footer */}
+          <p className="mt-6 text-[11px] text-gray-500 text-center leading-relaxed">
+            By clicking sign in, you agree to our{" "}
+            <a href="#" className="underline underline-offset-2 hover:text-gray-300">
+              Terms of Service
+            </a>{" "}
+            and{" "}
+            <a href="#" className="underline underline-offset-2 hover:text-gray-300">
+              Privacy Policy
+            </a>.
+          </p>
+        </div>
       </div>
-    </div>
-  )
-}
 
-/* ------------------ Reusable Components ------------------ */
-
-function Input({
-  label,
-  type = "text",
-  ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
-  return (
-    <div className="space-y-1">
-      <label className="text-sm text-gray-300">{label}</label>
-      <input
-        type={type}
-        className="w-full rounded-lg bg-[#0f172a] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600/40"
-        {...props}
-      />
-    </div>
-  )
-}
-
-function Select({ label }: { label: string }) {
-  return (
-    <div className="space-y-1">
-      <label className="text-sm text-gray-300">{label}</label>
-      <select className="w-full rounded-lg bg-[#0f172a] border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-600/40">
-        <option>Select state</option>
-        <option>Maharashtra</option>
-        <option>Delhi</option>
-        <option>Karnataka</option>
-      </select>
-    </div>
-  )
-}
-
-function PasswordInput({
-  label,
-  show,
-  toggle,
-}: {
-  label: string
-  show: boolean
-  toggle: () => void
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="text-sm text-gray-300">{label}</label>
-      <div className="relative">
-        <input
-          type={show ? "text" : "password"}
-          className="w-full rounded-lg bg-[#0f172a] border border-white/10 px-3 py-2 pr-10 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600/40"
-        />
-        <button
-          type="button"
-          onClick={toggle}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
-        >
-          {show ? <EyeOff size={16} /> : <Eye size={16} />}
-        </button>
+      {/* ================= RIGHT SECTION ================= */}
+      <div className="hidden md:flex w-1/2 bg-[#0b0f1a] relative items-center justify-start border-l border-white/5">
+        <div className="w-full h-[80%] pl-12">
+          <div className="w-full h-full rounded-tl-xl border-t border-l border-white/10 shadow-[20px_0_60px_rgba(0,0,0,0.8)] overflow-hidden">
+            <img
+              src="/dashboard-preview.png"
+              alt="Dashboard Preview"
+              className="w-full h-full object-cover object-left-top opacity-90"
+            />
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -21,9 +21,14 @@
     "@mui/material": "^7.3.7",
     "@nivo/pie": "^0.99.0",
     "@novu/notification-center": "^2.0.0",
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-slot": "^1.2.4",
     "@reduxjs/toolkit": "^2.11.2",
     "@sentry/react": "^10.37.0",
     "axios": "^1.13.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.19",
     "dhtmlx-gantt": "^9.1.1",
@@ -46,6 +51,8 @@
     "react-vertical-timeline-component": "^3.5.3",
     "recharts": "^3.7.0",
     "slick-carousel": "^1.8.1",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7",
     "yup": "^1.7.1"
   },
   "devDependencies": {
