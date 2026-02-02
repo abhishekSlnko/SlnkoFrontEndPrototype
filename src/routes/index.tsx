@@ -106,7 +106,6 @@ import DashboardLoan from "../pages/Dashboard/DashboardLoan";
 import DashboardTask from "../pages/Dashboard/DashboardTask";
 import DashboardProjects from "../pages/Dashboard/DashboardsProjects";
 import MainDashboard from "../pages/Dashboard/Dashboard";
-import Register from "../pages/Users/auth/Register"; // Adjust path if needed
 
 function index() {
   return (

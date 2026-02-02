@@ -1,7 +1,7 @@
 import { Eye, EyeOff } from "lucide-react"
 import { useState } from "react"
-import { default as axios } from "axios"
-import React from "react"
+// import { default as axios } from "axios"
+// import React from "react"
 // UI Components
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -31,23 +31,23 @@ export default function CreateAccount() {
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
-  
-  try {
-    const response = await axios.post("YOUR_BACKEND_URL/api/login", formData);
+  console.log("Form Data Submitted:", formData);
+  // try {
+  //   const response = await axios.post("YOUR_BACKEND_URL/api/login", formData);
     
-    if (response.data.token) {
-      // 1. Save token so checkAuth can use it later
-      localStorage.setItem("token", response.data.token);
+  //   if (response.data.token) {
+  //     // 1. Save token so checkAuth can use it later
+  //     localStorage.setItem("token", response.data.token);
       
-      // 2. Update Zustand store immediately
-      useAuthStore.getState().setAuth(response.data); 
+  //     // 2. Update Zustand store immediately
+  //     useAuthStore.getState().setAuth(response.data); 
       
-      // 3. Redirect to dashboard
-      window.location.href = "/dashboard"; 
-    }
-  } catch (error) {
-    console.error("Login Error:", error);
-  }
+  //     // 3. Redirect to dashboard
+  //     window.location.href = "/dashboard"; 
+  //   }
+  // } catch (error) {
+  //   console.error("Login Error:", error);
+  // }
 }
 
   return (
