@@ -1,6 +1,7 @@
 import { Eye, EyeOff } from "lucide-react"
 import { useState } from "react"
-// import { default as axios } from "axios"
+import Axios from "@/utils/Axios"
+import { useNavigate } from "react-router-dom"; // Add this
 // import React from "react"
 // UI Components
 import { Input } from "@/components/ui/input"
@@ -18,6 +19,7 @@ import {
 import { useAuthStore } from "../../../store/useAuthStore"
 
 export default function CreateAccount() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
@@ -31,24 +33,35 @@ export default function CreateAccount() {
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
-  // console.log("Form Data Submitted:", formData);
+
+  // Mapping fields to match your Backend (user.controller.js)
+  const payload = {
+    name: formData.name,
+    email: formData.email,
+    emp_id: formData.username, // UI 'username' -> Backend 'emp_id'
+    password: formData.password,
+    phone: formData.phone || "0000000000", 
+    department: formData.state || "General", 
+    role: "User", 
+    location: formData.city || "", 
+    about: "", 
+    attachment_url: "" 
+  };
+
   try {
-    const response = await axios.post("YOUR_BACKEND_URL/api/login", formData);
+    // Calling the specific route from your backend: /user-registratioN-IT
+    const response = await Axios.post("/user-registratioN-IT", payload);
     
-    if (response.data.token) {
-      // 1. Save token so checkAuth can use it later
-      localStorage.setItem("token", response.data.token);
-      
-      // 2. Update Zustand store immediately
-      useAuthStore.getState().setAuth(response.data); 
-      
-      // 3. Redirect to dashboard
-      window.location.href = "/dashboard"; 
+    if (response.status === 200) {
+      alert("User registered successfully!");
+      navigate("/login"); 
     }
-  } catch (error) {
-    console.error("Login Error:", error);
+  } catch (error: any) {
+    console.error("Registration Error:", error);
+    const errorMsg = error.response?.data?.msg || "Server error occurred";
+    alert(errorMsg); // Using standard alert instead of toast
   }
-}
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-[#060b1a] to-black px-4">
