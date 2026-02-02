@@ -1,252 +1,160 @@
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, LogIn } from "lucide-react"
 import { useState } from "react"
-// import { default as axios } from "axios"
-// import React from "react"
-// UI Components
+import { useNavigate } from "react-router-dom"
+import { toast } from "react-toastify"
+
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select"
 
-// Zustand Store
-import { useAuthStore } from "../../../store/useAuthStore"
+// 1. Import your Zustand store
+import { useAuthStore } from "../../../store/useAuthStore" 
 
-export default function CreateAccount() {
+export default function SignIn() {
+  const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Zustand state and actions
-  const { formData, updateField } = useAuthStore()
+  // 2. Local state for form inputs
+  const [email, setEmail] = useState("") // This will be sent as 'identity'
+  const [password, setPassword] = useState("")
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // We cast e.target.id to keyof AuthFormData to satisfy TypeScript
-    updateField(e.target.id as any, e.target.value)
+  // 3. Get the login action from Zustand
+  const login = useAuthStore((state) => state.login)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      // 4. Call the Zustand login action
+      // We map our 'email' state to 'identity' because your backend needs it
+      await login({ identity: email, password })
+      
+      toast.success("Welcome back!")
+      navigate("/dashboard-projects")
+    } catch (err: any) {
+      // Display the error message returned from your backend
+      toast.error(err.toString() || "Invalid credentials")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  console.log("Form Data Submitted:", formData);
-  // try {
-  //   const response = await axios.post("YOUR_BACKEND_URL/api/login", formData);
-    
-  //   if (response.data.token) {
-  //     // 1. Save token so checkAuth can use it later
-  //     localStorage.setItem("token", response.data.token);
-      
-  //     // 2. Update Zustand store immediately
-  //     useAuthStore.getState().setAuth(response.data); 
-      
-  //     // 3. Redirect to dashboard
-  //     window.location.href = "/dashboard"; 
-  //   }
-  // } catch (error) {
-  //   console.error("Login Error:", error);
-  // }
-}
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-[#060b1a] to-black px-4">
-      <div className="w-full max-w-md rounded-2xl bg-[#0b1020]/80 backdrop-blur-xl border border-white/10 shadow-2xl p-6">
+    <div className="min-h-screen bg-[#020617] flex flex-col md:flex-row text-white overflow-hidden">
+      
+      {/* ================= LEFT SECTION ================= */}
+      <div className="w-full md:w-1/2 flex flex-col justify-center items-center px-8 py-12">
+        <div className="w-full max-w-[350px]">
 
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-2 mb-6 text-white">
-          <span className="text-xl">⌘</span>
-          <span className="text-lg font-semibold">ProTrac</span>
-        </div>
-
-        {/* Header */}
-        <h2 className="text-xl font-semibold text-white">Create an account</h2>
-        <p className="text-sm text-gray-400 mt-1">
-          Enter your email and password to create an account.{" "}
-          <span className="text-gray-300">
-            Already have an account? <a href="#" className="text-blue-400 hover:underline">Sign In</a>
-          </span>
-        </p>
-
-        {/* Error */}
-        <div className="mt-4 rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-2 text-sm text-red-400">
-          Invitation link is invalid or expired. <a href="#" className="underline">Go to sign in</a>
-        </div>
-
-        {/* Form */}
-        <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
-
-          <Field id="name" label="Name">
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="eg: John Doe"
-              className="text-white placeholder:text-gray-400"
+          {/* Logo */}
+          <div className="flex justify-center mb-12">
+            <img
+              src="/logo.png"
+              alt="ProTrac Logo"
+              className="h-20 w-auto object-contain"
             />
-          </Field>
-
-          <Field id="email" label="Email">
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="name@example.com"
-              className="text-white placeholder:text-gray-400"
-            />
-          </Field>
-
-          <Field id="username" label="Username">
-            <Input
-              id="username"
-              value={formData.username}
-              onChange={handleChange}
-              placeholder="eg: john.doe"
-              className="text-white placeholder:text-gray-400"
-            />
-          </Field>
-
-          <Field id="dob" label="Date of Birth">
-            <Input
-              id="dob"
-              type="date"
-              value={formData.dob}
-              onChange={handleChange}
-              className="text-white [&::-webkit-calendar-picker-indicator]:invert"
-            />
-          </Field>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Field id="village" label="Village">
-              <Input
-                id="village"
-                value={formData.village}
-                onChange={handleChange}
-                placeholder="Village"
-                className="text-white placeholder:text-gray-400"
-              />
-            </Field>
-            <Field id="city" label="City">
-              <Input
-                id="city"
-                value={formData.city}
-                onChange={handleChange}
-                placeholder="City"
-                className="text-white placeholder:text-gray-400"
-              />
-            </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field id="state" label="State">
-              <Select 
-                value={formData.state} 
-                onValueChange={(val) => updateField("state", val)}
-              >
-                <SelectTrigger className="text-white">
-                  <SelectValue placeholder="Select state" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="mh">Maharashtra</SelectItem>
-                  <SelectItem value="dl">Delhi</SelectItem>
-                  <SelectItem value="ka">Karnataka</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-
-            <Field id="country" label="Country">
-              <Input
-                value={formData.country}
-                disabled
-                className="text-white/70"
-              />
-            </Field>
+          {/* Header */}
+          <div className="mb-6">
+            <h2 className="text-xl font-bold tracking-tight">Sign in</h2>
+            <p className="text-gray-400 text-sm mt-1">
+              Enter your email and password below to log into your account
+            </p>
           </div>
 
-          <PasswordField
-            id="password"
-            label="Password"
-            value={formData.password}
-            onChange={handleChange}
-            show={showPassword}
-            toggle={() => setShowPassword(!showPassword)}
-          />
+          {/* Form */}
+          <form className="space-y-4" onSubmit={handleSubmit}>
 
-          <PasswordField
-            id="confirmPassword"
-            label="Confirm Password"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            show={showConfirmPassword}
-            toggle={() => setShowConfirmPassword(!showConfirmPassword)}
-          />
+            {/* Email / Identity */}
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-gray-200">
+                Email or Employee ID
+              </Label>
+              <Input
+                id="email"
+                type="text" // Changed to text to support Emp ID/Name as well
+                placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="bg-[#0f172a]/40 border-white/10 focus-visible:ring-blue-500/50 text-white"
+              />
+            </div>
 
-          <Button
-            type="submit"
-            className="w-full mt-2 bg-blue-600/60 hover:bg-blue-600/80"
-          >
-            Create Account
-          </Button>
-        </form>
+            {/* Password */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="password" className="text-gray-200">
+                  Password
+                </Label>
+                <a href="#" className="text-xs text-gray-400 hover:text-white transition-colors">
+                  Forgot password?
+                </a>
+              </div>
 
-        <p className="mt-6 text-xs text-center text-gray-400">
-          By creating an account, you agree to our{" "}
-          <a href="#" className="underline">Terms of Service</a> and{" "}
-          <a href="#" className="underline">Privacy Policy</a>.
-        </p>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="pr-10 bg-[#0f172a]/40 border-white/10 focus-visible:ring-blue-500/50 text-white"
+                />
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </Button>
+              </div>
+            </div>
+
+            {/* Submit */}
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex items-center gap-2 bg-blue-500 hover:bg-blue-600 mt-2 text-white"
+            >
+              {isLoading ? (
+                <span className="animate-spin">⌛</span>
+              ) : (
+                <>
+                  <LogIn size={16} />
+                  Sign in
+                </>
+              )}
+            </Button>
+          </form>
+
+          {/* Footer */}
+          <p className="mt-6 text-[11px] text-gray-500 text-center leading-relaxed">
+            By clicking sign in, you agree to our{" "}
+            <a href="#" className="underline underline-offset-2 hover:text-gray-300">Terms of Service</a> and{" "}
+            <a href="#" className="underline underline-offset-2 hover:text-gray-300">Privacy Policy</a>.
+          </p>
+        </div>
       </div>
-    </div>
-  )
-}
 
-/* ------------------ Helpers ------------------ */
-
-function Field({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1">
-      <Label htmlFor={id} className="text-gray-300">{label}</Label>
-      {children}
-    </div>
-  )
-}
-
-function PasswordField({
-  id,
-  label,
-  show,
-  toggle,
-  value,
-  onChange,
-}: {
-  id: string
-  label: string
-  show: boolean
-  toggle: () => void
-  value: string
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-}) {
-  return (
-    <div className="space-y-1">
-      <Label htmlFor={id} className="text-gray-300">{label}</Label>
-      <div className="relative">
-        <Input
-          id={id}
-          value={value}
-          onChange={onChange}
-          type={show ? "text" : "password"}
-          className="pr-10 text-white placeholder:text-gray-400"
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={toggle}
-          className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
-        >
-          {show ? <EyeOff size={16} /> : <Eye size={16} />}
-        </Button>
+      {/* ================= RIGHT SECTION ================= */}
+      <div className="hidden md:flex w-1/2 bg-[#0b0f1a] relative items-center justify-start border-l border-white/5">
+        <div className="w-full h-[80%] pl-12">
+          <div className="w-full h-full rounded-tl-xl border-t border-l border-white/10 shadow-[20px_0_60px_rgba(0,0,0,0.8)] overflow-hidden">
+            <img
+              src="/dashboard-preview.png"
+              alt="Dashboard Preview"
+              className="w-full h-full object-cover object-left-top opacity-90"
+            />
+          </div>
+        </div>
       </div>
     </div>
   )

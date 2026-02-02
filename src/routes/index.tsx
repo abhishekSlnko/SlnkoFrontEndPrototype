@@ -26,6 +26,7 @@ import PurchaseOrder from "../pages/SCM/POSummary";
 import VendorBill from "../pages/SCM/VendorBill";
 import AddUser from "../pages/Users/AddUser";
 import ForgotPassword from "../pages/Users/auth/ForgotPassword";
+import SignUp from "../pages/Users/auth/SignUp";
 import Login from "../pages/Users/auth/Login";
 import EditUser from "../pages/Users/EditUser";
 import Add_Adjusment from "../pages/Accounts/Adjust_Request";
@@ -113,7 +114,7 @@ function index() {
       {/*============ Pages ==========*/}
 
       {/*---------dashboard -------- */}
-      <Route path="/" element={<Login />} />
+      <Route path="/" element={<SignUp />} />
       <Route
         path="/dashboard"
         element={
