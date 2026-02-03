@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import axios from 'axios';
+// import axios from 'axios';
+import Axios from '../utils/Axios';
 
 interface AuthFormData {
   name: string; email: string; username: string; dob: string;
@@ -23,7 +24,7 @@ interface AuthState {
 }
 
 // 1. Fixed Base URL (Removed /v1 based on your backend routes)
-const API_BASE_URL = "http://localhost:8080/v1"; 
+// const API_BASE_URL = "http://localhost:8080/v1"; 
 
 export const useAuthStore = create<AuthState>((set) => ({
   formData: {
@@ -50,7 +51,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (credentials) => {
     try {
       // Endpoint changed to /logiN-IT to match backend router
-      const response = await axios.post(`${API_BASE_URL}/logiN-IT`, credentials);
+      // const response = await axios.post(`${API_BASE_URL}/logiN-IT`, credentials);
+      const response = await Axios.post("/logiN-IT", credentials);
+
       
       // Backend returns data directly, not inside a 'success' boolean
       if (response.data.token) {
@@ -75,7 +78,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
 
       // Endpoint changed to /me to match backend router
-      const response = await axios.get(`${API_BASE_URL}/me`, {
+      // const response = await axios.get(`${API_BASE_URL}/me`, {
+      const response = await Axios.get("/me",{
+
         headers: { Authorization: `Bearer ${token}` }
       });
 
