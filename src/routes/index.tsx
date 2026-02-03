@@ -107,6 +107,7 @@ import DashboardLoan from "../pages/Dashboard/DashboardLoan";
 import DashboardTask from "../pages/Dashboard/DashboardTask";
 import DashboardProjects from "../pages/Dashboard/DashboardsProjects";
 import MainDashboard from "../pages/Dashboard/Dashboard";
+import CheckInvitation from "@/pages/Users/auth/CheckInvitation";
 
 function index() {
   return (
@@ -123,6 +124,8 @@ function index() {
           </PrivateRoute>
         }
       />
+      <Route path="/check" element={<CheckInvitation/>}/>
+        
 
       <Route
         path="/dashboard-projects"
